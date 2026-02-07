@@ -27,7 +27,7 @@ const MODEL_MAPPING = {
   'gpt-4': 'nvidia/nemotron-3-nano-30b-a3b',
   'gpt-4-turbo': 'moonshotai/kimi-k2.5',
   'gpt-4o': 'deepseek-ai/deepseek-v3.1',
-  'claude-3-opus': 'deepseek-ai/deepseek-v3.2',
+  'claude-3-opus': 'z-ai/glm4.7',
   'claude-3-sonnet': 'openai/gpt-oss-20b',
   'gemini-pro': 'nemotron-3-nano-30b-a3b' 
 };
