@@ -91,7 +91,27 @@ app.post('/v1/chat/completions', async (req, res) => {
         }
       }
     }
-    
+
+    // === AQUÍ VA LA LIMPIEZA ===
+delete nimRequest.presence_penalty;
+delete nimRequest.frequency_penalty;
+delete nimRequest.stop;
+if (nimRequest.max_tokens && nimRequest.max_tokens > 4096) {
+  nimRequest.max_tokens = 4096;
+}
+if (nimRequest.temperature > 1.1) {
+  nimRequest.temperature = 1.0;
+}
+
+console.log('Sending to NIM:', JSON.stringify({
+  model: nimRequest.model,
+  messagesCount: nimRequest.messages?.length,
+  max_tokens: nimRequest.max_tokens,
+  stream: nimRequest.stream
+}));
+// === FIN DE LA LIMPIEZA ===
+
+const response = await fetchWithRetry(...) // o el fetch/axios que uses
     // Transform OpenAI request to NIM format
     const nimRequest = {
       model: nimModel,
@@ -214,18 +234,20 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.json(openaiResponse);
     }
     
-  } catch (error) {
-    console.error('Proxy error:', error.message);
-    
-    res.status(error.response?.status || 500).json({
-      error: {
-        message: error.message || 'Internal server error',
-        type: 'invalid_request_error',
-        code: error.response?.status || 500
-      }
-    });
-  }
-});
+} catch (error) {
+  const status = error.response?.status || 500;
+  const detail = error.response?.data || { message: error.message };
+  console.error('NIM Error:', status, JSON.stringify(detail));
+  
+  res.status(status).json({
+    error: {
+      message: detail.message || detail.detail || detail.title || 'Request failed',
+      type: 'invalid_request_error',
+      code: status,
+      details: detail
+    }
+  });
+  } 
 
 // Catch-all for unsupported endpoints
 app.all('*', (req, res) => {
