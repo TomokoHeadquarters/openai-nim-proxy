@@ -92,36 +92,39 @@ app.post('/v1/chat/completions', async (req, res) => {
       }
     }
 
-    // === AQUÍ VA LA LIMPIEZA ===
-delete nimRequest.presence_penalty;
-delete nimRequest.frequency_penalty;
-delete nimRequest.stop;
-if (nimRequest.max_tokens && nimRequest.max_tokens > 4096) {
-  nimRequest.max_tokens = 4096;
-}
-if (nimRequest.temperature > 1.1) {
-  nimRequest.temperature = 1.0;
-}
-
-console.log('Sending to NIM:', JSON.stringify({
-  model: nimRequest.model,
-  messagesCount: nimRequest.messages?.length,
-  max_tokens: nimRequest.max_tokens,
-  stream: nimRequest.stream
-}));
-// === FIN DE LA LIMPIEZA ===
-
-const response = await fetchWithRetry(...) // o el fetch/axios que uses
-    // Transform OpenAI request to NIM format
+// Transform OpenAI request to NIM format
     const nimRequest = {
       model: nimModel,
       messages: messages,
-      temperature: temperature || 0.6,
-      max_tokens: max_tokens || 9024,
-      extra_body: ENABLE_THINKING_MODE ? { chat_template_kwargs: { thinking: true } } : undefined,
+      temperature: temperature || 0.7,
+      max_tokens: max_tokens || 2048,   // bajé el default porque 9024 suele causar problemas
       stream: stream || false
     };
-    
+
+    // Solo agregar thinking si está activado
+    if (ENABLE_THINKING_MODE) {
+      nimRequest.extra_body = { chat_template_kwargs: { thinking: true } };
+    }
+
+    // === LIMPIEZA para evitar error 400 ===
+    delete nimRequest.presence_penalty;
+    delete nimRequest.frequency_penalty;
+    delete nimRequest.stop;
+
+    if (nimRequest.max_tokens && nimRequest.max_tokens > 4096) {
+      nimRequest.max_tokens = 4096;
+    }
+    if (nimRequest.temperature > 1.1) {
+      nimRequest.temperature = 1.0;
+    }
+
+    console.log('Sending to NIM:', JSON.stringify({
+      model: nimRequest.model,
+      messagesCount: nimRequest.messages?.length,
+      max_tokens: nimRequest.max_tokens,
+      stream: nimRequest.stream
+    }));
+
     // Make request to NVIDIA NIM API
     const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
       headers: {
